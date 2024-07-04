@@ -83,9 +83,13 @@ void wake_face_resign(movement_settings_t *settings, void *context) {
     (void) settings;
     wake_face_state_t *state = (wake_face_state_t *)context;
 
+    // Save the alarm state
     if (state->mode) {
         settings->bit.alarm_enabled = true;
     }
+    
+    // remove 24h indicator
+    watch_clear_indicator(WATCH_INDICATOR_24H);
         
 }
 
