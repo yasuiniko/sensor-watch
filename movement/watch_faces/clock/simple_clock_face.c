@@ -30,8 +30,8 @@
 
 static void _update_alarm_indicator(bool settings_alarm_enabled, simple_clock_state_t *state) {
     state->alarm_enabled = settings_alarm_enabled;
-    if (state->alarm_enabled) watch_set_indicator(WATCH_INDICATOR_SIGNAL);
-    else watch_clear_indicator(WATCH_INDICATOR_SIGNAL);
+    if (state->alarm_enabled) watch_set_indicator(WATCH_INDICATOR_BELL);
+    else watch_clear_indicator(WATCH_INDICATOR_BELL);
 }
 
 void simple_clock_face_setup(movement_settings_t *settings, uint8_t watch_face_index, void ** context_ptr) {
@@ -55,8 +55,8 @@ void simple_clock_face_activate(movement_settings_t *settings, void *context) {
     // if (settings->bit.clock_mode_24h) watch_set_indicator(WATCH_INDICATOR_24H);
 
     // handle chime indicator
-    if (state->signal_enabled) watch_set_indicator(WATCH_INDICATOR_BELL);
-    else watch_clear_indicator(WATCH_INDICATOR_BELL);
+    if (state->signal_enabled) watch_set_indicator(WATCH_INDICATOR_SIGNAL);
+    else watch_clear_indicator(WATCH_INDICATOR_SIGNAL);
 
     // show alarm indicator if there is an active alarm
     _update_alarm_indicator(settings->bit.alarm_enabled, state);
@@ -131,8 +131,8 @@ bool simple_clock_face_loop(movement_event_t event, movement_settings_t *setting
             break;
         case EVENT_ALARM_LONG_PRESS:
             state->signal_enabled = !state->signal_enabled;
-            if (state->signal_enabled) watch_set_indicator(WATCH_INDICATOR_BELL);
-            else watch_clear_indicator(WATCH_INDICATOR_BELL);
+            if (state->signal_enabled) watch_set_indicator(WATCH_INDICATOR_SIGNAL);
+            else watch_clear_indicator(WATCH_INDICATOR_SIGNAL);
             break;
         case EVENT_BACKGROUND_TASK:
             // uncomment this line to snap back to the clock face when the hour signal sounds:
