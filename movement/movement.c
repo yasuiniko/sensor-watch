@@ -72,7 +72,7 @@
 
 // Default to 12h mode
 #ifndef MOVEMENT_DEFAULT_24H_MODE
-#define MOVEMENT_DEFAULT_24H_MODE false
+#define MOVEMENT_DEFAULT_24H_MODE true
 #endif
 
 // Default to mode button sounding on press
