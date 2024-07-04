@@ -33,6 +33,7 @@ const watch_face_t watch_faces[] = {
     simple_coin_flip_face,
     tomato_face,
     couch_to_5k_face,
+    wake_face,
     
     preferences_face,
     set_time_face,
@@ -60,10 +61,10 @@ const watch_face_t watch_faces[] = {
 #define MOVEMENT_DEFAULT_RED_COLOR 0x0
 
 /* Set to true for 24h mode or false for 12h mode */
-#define MOVEMENT_DEFAULT_24H_MODE false
+#define MOVEMENT_DEFAULT_24H_MODE true
 
 /* Enable or disable the sound on mode button press */
-#define MOVEMENT_DEFAULT_BUTTON_SOUND true
+#define MOVEMENT_DEFAULT_BUTTON_SOUND false
 
 /* Set the timeout before switching back to the main watch face
  * Valid values are:
@@ -90,9 +91,9 @@ const watch_face_t watch_faces[] = {
 /* Set the led duration
  * Valid values are:
  * 0: No LED
- * 1: 1 second
- * 2: 3 seconds
- * 3: 5 seconds
+ * 1: 1 tick
+ * 2: 3 ticks
+ * 3: 5 ticks
  */
 #define MOVEMENT_DEFAULT_LED_DURATION 1
 
