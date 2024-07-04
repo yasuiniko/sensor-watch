@@ -88,9 +88,8 @@ bool simple_clock_face_loop(movement_event_t event, movement_settings_t *setting
                 watch_enable_adc();
                 uint16_t voltage = watch_get_vcc_voltage();
                 watch_disable_adc();
-                // 2.2 volts will happen when the battery has maybe 5-10% remaining?
-                // we can refine this later.
-                state->battery_low = (voltage < 2200);
+                // At roughly 30µA, the battery should last about 1 week after reaching 2.45 volts
+                state->battery_low = (voltage < 2450);
             }
 
             // ...and set the LAP indicator if low.
