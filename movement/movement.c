@@ -242,7 +242,9 @@ void movement_illuminate_led(void) {
     if (movement_state.settings.bit.led_duration) {
         watch_set_led_color(movement_state.settings.bit.led_red_color ? (0xF | movement_state.settings.bit.led_red_color << 4) : 0,
                             movement_state.settings.bit.led_green_color ? (0xF | movement_state.settings.bit.led_green_color << 4) : 0);
-        movement_state.light_ticks = (movement_state.settings.bit.led_duration * 2 - 1) * 128;
+        // LED duration is light ticks directly instead of seconds
+        // movement_state.light_ticks = (movement_state.settings.bit.led_duration * 2 - 1) * 128;
+        movement_state.light_ticks = movement_state.settings.bit.led_duration;
         _movement_enable_fast_tick_if_needed();
     }
 }

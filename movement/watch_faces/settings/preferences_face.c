@@ -160,7 +160,9 @@ bool preferences_face_loop(movement_event_t event, movement_settings_t *settings
                 break;
             case 4:
                 if (settings->bit.led_duration) {
-                    sprintf(buf, " %1d SeC", settings->bit.led_duration * 2 - 1);
+                    // Change display to read ticks rather than seconds
+                    // sprintf(buf, " %1d SeC", settings->bit.led_duration * 2 - 1);
+                    sprintf(buf, " %1d tic", settings->bit.led_duration * 2 - 1);
                     watch_display_string(buf, 4);
                 } else {
                     watch_display_string("no LEd", 4);
