@@ -25,6 +25,8 @@
 // Emulator only: need time() to seed the random number generator.
 #if __EMSCRIPTEN__
 #include <time.h>
+#else
+#include "saml22j18a.h"
 #endif
 
 #include <stdlib.h>
@@ -64,11 +66,30 @@ static void display_dice_roll(probability_state_t *state) {
 }
 
 static void generate_random_number(probability_state_t *state) {
-    // Emulator: use rand. Hardware: use arc4random.
+    // use rand for emulator, TRNG for hardware
     #if __EMSCRIPTEN__
     state->rolled_value = rand() % state->dice_sides + 1;
     #else
-    state->rolled_value = arc4random_uniform(state->dice_sides) + 1;
+
+    uint32_t mask = 0xFFFFFFFF;
+    mask >>= __builtin_clz(state->dice_sides-1|1);
+    do {
+
+        // TRNG magic start
+        hri_mclk_set_APBCMASK_TRNG_bit(MCLK);
+        hri_trng_set_CTRLA_ENABLE_bit(TRNG);
+
+        while (!hri_trng_get_INTFLAG_reg(TRNG, TRNG_INTFLAG_DATARDY)); // Wait for TRNG data to be ready
+
+        watch_disable_TRNG();
+        hri_mclk_clear_APBCMASK_TRNG_bit(MCLK);
+        // TRNG magic end
+
+        // read TRNG and mask it to the upper bound number of sides
+        state->rolled_value = hri_trng_read_DATA_reg(TRNG) & mask;
+    } while (state->rolled_value > state->dice_sides);
+    
+    state->rolled_value++;
     #endif
 }
 
@@ -156,7 +177,7 @@ bool probability_face_loop(movement_event_t event, movement_settings_t *settings
             state->rolled_value = 0;
             display_dice_roll(state);
             break;
-        case EVENT_ALARM_BUTTON_UP:
+        case EVENT_ALARM_BUTTON_DOWN:
             // Roll the die
             generate_random_number(state);
             state->is_rolling = true;
