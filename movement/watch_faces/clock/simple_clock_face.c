@@ -54,13 +54,13 @@ void simple_clock_face_activate(movement_settings_t *settings, void *context) {
     // else watch_clear_indicator(WATCH_INDICATOR_SIGNAL);
 
     // show alarm indicator if there is an active alarm
-    if (state->alarm_enabled) watch_set_indicator(WATCH_INDICATOR_BELL);
+    if (settings->bit.alarm_enabled) watch_set_indicator(WATCH_INDICATOR_BELL);
     else watch_clear_indicator(WATCH_INDICATOR_BELL);
 
-    watch_set_colon();
+    // set battery indicator 
+    if (state->battery_low) watch_set_indicator(WATCH_INDICATOR_LAP);
 
-    // this ensures that none of the timestamp fields will match, so we can re-render them all.
-    state->previous_date_time = 0xFFFFFFFF;
+    watch_set_colon();
 }
 
 bool simple_clock_face_loop(movement_event_t event, movement_settings_t *settings, void *context) {
@@ -72,60 +72,72 @@ bool simple_clock_face_loop(movement_event_t event, movement_settings_t *setting
     uint32_t previous_date_time;
     switch (event.event_type) {
         case EVENT_ACTIVATE:
+            date_time = watch_rtc_get_date_time();
+            state->previous_date_time = date_time.reg;
+
+            // ...and set the LAP indicator if low.
+            if (state->battery_low) watch_set_indicator(WATCH_INDICATOR_LAP);
+
+            // get time string
+            pos = 0;
+            sprintf(buf, "%s%2d%2d%02d%02d", watch_utility_get_weekday(date_time), date_time.unit.day, date_time.unit.hour, date_time.unit.minute, date_time.unit.second);
+
+            // write time string
+            watch_display_string(buf, pos);
+            break;
         case EVENT_TICK:
         case EVENT_LOW_ENERGY_UPDATE:
             date_time = watch_rtc_get_date_time();
             previous_date_time = state->previous_date_time;
             state->previous_date_time = date_time.reg;
 
-            // check the battery voltage once a day...
-            if (date_time.unit.day != state->last_battery_check) {
-                state->last_battery_check = date_time.unit.day;
-                watch_enable_adc();
-                uint16_t voltage = watch_get_vcc_voltage();
-                watch_disable_adc();
-                // At roughly 30µA, the battery should last about 1 week after reaching 2.45 volts
-                state->battery_low = (voltage < 2450);
-            }
+            char seconds[2] = "  ";
+            if (event.event_type == EVENT_TICK) 
+                sprintf(seconds, "%02d", date_time.unit.second);
 
-            // ...and set the LAP indicator if low.
-            if (state->battery_low) watch_set_indicator(WATCH_INDICATOR_LAP);
-
-            if ((date_time.reg >> 6) == (previous_date_time >> 6) && event.event_type != EVENT_LOW_ENERGY_UPDATE) {
+            if (event.event_type == EVENT_TICK && (date_time.reg >> 6) == (previous_date_time >> 6)) {
                 // everything before seconds is the same, don't waste cycles setting those segments.
                 watch_display_character_lp_seconds('0' + date_time.unit.second / 10, 8);
                 watch_display_character_lp_seconds('0' + date_time.unit.second % 10, 9);
                 break;
-            } else if ((date_time.reg >> 12) == (previous_date_time >> 12) && event.event_type != EVENT_LOW_ENERGY_UPDATE) {
+            } else if ((date_time.reg >> 12) == (previous_date_time >> 12)) {
                 // everything before minutes is the same.
                 pos = 6;
-                sprintf(buf, "%02d%02d", date_time.unit.minute, date_time.unit.second);
+                sprintf(buf, "%02d%s", date_time.unit.minute, seconds);
             } else {
-                // other stuff changed; let's do it all.
-                // if (!settings->bit.clock_mode_24h) {
-                //     // if we are in 12 hour mode, do some cleanup.
-                //     if (date_time.unit.hour < 12) {
-                //         watch_clear_indicator(WATCH_INDICATOR_PM);
-                //     } else {
-                //         watch_set_indicator(WATCH_INDICATOR_PM);
-                //     }
-                //     date_time.unit.hour %= 12;
-                //     if (date_time.unit.hour == 0) date_time.unit.hour = 12;
-                // }
+                // the hour has changed; change everything
                 pos = 0;
-                if (event.event_type == EVENT_LOW_ENERGY_UPDATE) {
-                    if (!watch_tick_animation_is_running()) watch_start_tick_animation(500);
-                    sprintf(buf, "%s%2d%2d%02d  ", watch_utility_get_weekday(date_time), date_time.unit.day, date_time.unit.hour, date_time.unit.minute);
-                } else {
-                    sprintf(buf, "%s%2d%2d%02d%02d", watch_utility_get_weekday(date_time), date_time.unit.day, date_time.unit.hour, date_time.unit.minute, date_time.unit.second);
+                sprintf(buf, "%s%2d%2d%02d%s", watch_utility_get_weekday(date_time), date_time.unit.day, date_time.unit.hour, date_time.unit.minute, seconds);
+
+                // check the battery voltage if a day has passed
+                if (date_time.unit.day != state->last_battery_check) {
+                    state->last_battery_check = date_time.unit.day;
+                    watch_enable_adc();
+                    uint16_t voltage = watch_get_vcc_voltage();
+                    watch_disable_adc();
+                    // At roughly 30µA, the battery should last about 1 week after reaching 2.45 volts
+                    if (voltage < 2450) {
+                        state->battery_low = true;
+
+                        // set the LAP indicator if voltage is low.
+                        watch_set_indicator(WATCH_INDICATOR_LAP);
+                    }
                 }
             }
+
+            // write time string
+            if (!watch_tick_animation_is_running()) watch_start_tick_animation(500);
             watch_display_string(buf, pos);
-        // case EVENT_ALARM_LONG_PRESS:
-        //     state->signal_enabled = !state->signal_enabled;
-        //     if (state->signal_enabled) watch_set_indicator(WATCH_INDICATOR_SIGNAL);
-        //     else watch_clear_indicator(WATCH_INDICATOR_SIGNAL);
-        //     break;
+        
+        case EVENT_ALARM_LONG_PRESS:
+            // state->signal_enabled = !state->signal_enabled;
+            // if (state->signal_enabled) watch_set_indicator(WATCH_INDICATOR_SIGNAL);
+            // else watch_clear_indicator(WATCH_INDICATOR_SIGNAL);
+            // break;
+            settings->bit.alarm_enabled = !settings->bit.alarm_enabled;
+            if (settings->bit.alarm_enabled) watch_set_indicator(WATCH_INDICATOR_BELL);
+            else watch_clear_indicator(WATCH_INDICATOR_BELL);
+            break;
         // case EVENT_BACKGROUND_TASK:
         //     // uncomment this line to snap back to the clock face when the hour signal sounds:
         //     // movement_move_to_face(state->watch_face_index);
@@ -139,8 +151,9 @@ bool simple_clock_face_loop(movement_event_t event, movement_settings_t *setting
 }
 
 void simple_clock_face_resign(movement_settings_t *settings, void *context) {
-    (void) settings;
+    // (void) settings;
     (void) context;
+    watch_store_backup_data(settings->reg, 0);
 }
 
 // bool simple_clock_face_wants_background_task(movement_settings_t *settings, void *context) {
