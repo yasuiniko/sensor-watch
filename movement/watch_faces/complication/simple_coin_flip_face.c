@@ -32,7 +32,7 @@
 #include <string.h>
 #include "simple_coin_flip_face.h"
 
-#define SIMPLE_COIN_FLIP_REQUIRE_LONG_PRESS_FOR_REFLIP true
+#define SIMPLE_COIN_FLIP_REQUIRE_LONG_PRESS_FOR_REFLIP false
 
 void simple_coin_flip_face_setup(movement_settings_t *settings, uint8_t watch_face_index, void ** context_ptr) {
     (void) settings;
@@ -121,14 +121,12 @@ bool simple_coin_flip_face_loop(movement_event_t event, movement_settings_t *set
             }
             state->animation_frame++;
             break;
-        case EVENT_LIGHT_BUTTON_UP:
         case EVENT_ALARM_BUTTON_UP:
             if (!SIMPLE_COIN_FLIP_REQUIRE_LONG_PRESS_FOR_REFLIP || state->animation_frame == 0) {
                 state->animation_frame = 1;
             }
             break;
         case EVENT_ALARM_LONG_PRESS:
-        case EVENT_LIGHT_LONG_PRESS:
             state->animation_frame = 1;
             break;
         case EVENT_TIMEOUT:
