@@ -47,14 +47,14 @@ void clock_face_setup(movement_settings_t *settings, uint8_t watch_face_index, v
 void clock_face_activate(movement_settings_t *settings, void *context);
 bool clock_face_loop(movement_event_t event, movement_settings_t *settings, void *context);
 void clock_face_resign(movement_settings_t *settings, void *context);
-bool clock_face_wants_background_task(movement_settings_t *settings, void *context);
+// bool clock_face_wants_background_task(movement_settings_t *settings, void *context);
 
 #define clock_face ((const watch_face_t) { \
     clock_face_setup, \
     clock_face_activate, \
     clock_face_loop, \
     clock_face_resign, \
-    clock_face_wants_background_task, \
+    NULL, \
 })
 
 #endif // CLOCK_FACE_H_

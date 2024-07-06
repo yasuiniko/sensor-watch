@@ -36,14 +36,14 @@
 #include "watch_utility.h"
 #include "watch_private_display.h"
 
-// 2.2 volts will happen when the battery has maybe 5-10% remaining?
+// 2.45 volts will happen when the battery has maybe 1 week remaining?
 // we can refine this later.
 #ifndef CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD
-#define CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD 2200
+#define CLOCK_FACE_LOW_BATTERY_VOLTAGE_THRESHOLD 2450
 #endif
 
 #ifndef CLOCK_FACE_24H_ONLY
-#define CLOCK_FACE_24H_ONLY 0
+#define CLOCK_FACE_24H_ONLY 1
 #endif
 
 typedef struct {
@@ -52,7 +52,7 @@ typedef struct {
     } date_time;
     uint8_t last_battery_check;
     uint8_t watch_face_index;
-    bool time_signal_enabled;
+    bool hour_signal_enabled;
     bool battery_low;
 } clock_state_t;
 
@@ -73,13 +73,13 @@ static void clock_indicate_alarm(movement_settings_t *settings) {
     clock_indicate(WATCH_INDICATOR_BELL, settings->bit.alarm_enabled);
 }
 
-static void clock_indicate_time_signal(clock_state_t *clock) {
-    clock_indicate(WATCH_INDICATOR_SIGNAL, clock->time_signal_enabled);
-}
+// static void clock_indicate_hour_signal(clock_state_t *clock) {
+//     clock_indicate(WATCH_INDICATOR_SIGNAL, clock->hour_signal_enabled);
+// }
 
-static void clock_indicate_24h(movement_settings_t *settings) {
-    clock_indicate(WATCH_INDICATOR_24H, clock_is_in_24h_mode(settings));
-}
+// static void clock_indicate_24h(movement_settings_t *settings) {
+//     clock_indicate(WATCH_INDICATOR_24H, clock_is_in_24h_mode(settings));
+// }
 
 static bool clock_is_pm(watch_date_time date_time) {
     return date_time.unit.hour >= 12;
@@ -120,9 +120,14 @@ static void clock_check_battery_periodically(clock_state_t *clock, watch_date_ti
     clock_indicate_low_available_power(clock);
 }
 
-static void clock_toggle_time_signal(clock_state_t *clock) {
-    clock->time_signal_enabled = !clock->time_signal_enabled;
-    clock_indicate_time_signal(clock);
+// static void clock_toggle_hour_signal(clock_state_t *clock) {
+//     clock->hour_signal_enabled = !clock->hour_signal_enabled;
+//     clock_indicate_hour_signal(clock);
+// }
+
+static void clock_toggle_alarm(movement_settings_t *settings) {
+    settings->bit.alarm_enabled = !settings->bit.alarm_enabled;
+    clock_indicate_alarm(settings);
 }
 
 static void clock_display_all(watch_date_time date_time) {
@@ -220,7 +225,7 @@ void clock_face_setup(movement_settings_t *settings, uint8_t watch_face_index, v
     if (*context_ptr == NULL) {
         *context_ptr = malloc(sizeof(clock_state_t));
         clock_state_t *state = (clock_state_t *) *context_ptr;
-        state->time_signal_enabled = false;
+        state->hour_signal_enabled = false;
         state->watch_face_index = watch_face_index;
     }
 }
@@ -230,9 +235,9 @@ void clock_face_activate(movement_settings_t *settings, void *context) {
 
     clock_stop_tick_tock_animation();
 
-    clock_indicate_time_signal(clock);
+    // clock_indicate_hour_signal(clock);
     clock_indicate_alarm(settings);
-    clock_indicate_24h(settings);
+    // clock_indicate_24h(settings);
 
     watch_set_colon();
 
@@ -261,13 +266,13 @@ bool clock_face_loop(movement_event_t event, movement_settings_t *settings, void
 
             break;
         case EVENT_ALARM_LONG_PRESS:
-            clock_toggle_time_signal(state);
+            clock_toggle_alarm(settings);
             break;
-        case EVENT_BACKGROUND_TASK:
-            // uncomment this line to snap back to the clock face when the hour signal sounds:
-            // movement_move_to_face(state->watch_face_index);
-            movement_play_signal();
-            break;
+        // case EVENT_BACKGROUND_TASK:
+        //     // uncomment this line to snap back to the clock face when the hour signal sounds:
+        //     // movement_move_to_face(state->watch_face_index);
+        //     movement_play_signal();
+        //     break;
         default:
             return movement_default_loop_handler(event, settings);
     }
@@ -280,12 +285,12 @@ void clock_face_resign(movement_settings_t *settings, void *context) {
     (void) context;
 }
 
-bool clock_face_wants_background_task(movement_settings_t *settings, void *context) {
-    (void) settings;
-    clock_state_t *state = (clock_state_t *) context;
-    if (!state->time_signal_enabled) return false;
+// bool clock_face_wants_background_task(movement_settings_t *settings, void *context) {
+//     (void) settings;
+//     clock_state_t *state = (clock_state_t *) context;
+//     if (!state->hour_signal_enabled) return false;
 
-    watch_date_time date_time = watch_rtc_get_date_time();
+//     watch_date_time date_time = watch_rtc_get_date_time();
 
-    return date_time.unit.minute == 0;
-}
+//     return date_time.unit.minute == 0;
+// }
