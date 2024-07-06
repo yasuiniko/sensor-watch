@@ -85,14 +85,15 @@ bool simple_clock_face_loop(movement_event_t event, movement_settings_t *setting
             // write time string
             watch_display_string(buf, pos);
             break;
-        case EVENT_TICK:
         case EVENT_LOW_ENERGY_UPDATE:
+            if (!watch_tick_animation_is_running()) watch_start_tick_animation(500);
+        case EVENT_TICK:
             date_time = watch_rtc_get_date_time();
             previous_date_time = state->previous_date_time;
             state->previous_date_time = date_time.reg;
 
             char seconds[2] = "  ";
-            if (event.event_type == EVENT_TICK) 
+            if (event.event_type != EVENT_LOW_ENERGY_UPDATE) 
                 sprintf(seconds, "%02d", date_time.unit.second);
 
             if (event.event_type == EVENT_TICK && (date_time.reg >> 6) == (previous_date_time >> 6)) {
@@ -126,8 +127,8 @@ bool simple_clock_face_loop(movement_event_t event, movement_settings_t *setting
             }
 
             // write time string
-            if (!watch_tick_animation_is_running()) watch_start_tick_animation(500);
             watch_display_string(buf, pos);
+            break;
         
         case EVENT_ALARM_LONG_PRESS:
             // state->signal_enabled = !state->signal_enabled;
