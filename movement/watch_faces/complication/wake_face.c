@@ -79,19 +79,16 @@ void wake_face_activate(movement_settings_t *settings, void *context) {
     (void) settings;
     wake_face_state_t *state = (wake_face_state_t *)context;
 
-    if (settings->bit.alarm_enabled) {
-        state->mode = 1;
-        watch_set_indicator(WATCH_INDICATOR_BELL);
-    }
+    // get the alarm state
+    state->mode = settings->bit.alarm_enabled;
 }
+
 void wake_face_resign(movement_settings_t *settings, void *context) {
     (void) settings;
     wake_face_state_t *state = (wake_face_state_t *)context;
 
     // Save the alarm state
-    if (state->mode) {
-        settings->bit.alarm_enabled = true;
-    }
+    settings->bit.alarm_enabled = state->mode;
     
     // remove 24h indicator
     watch_clear_indicator(WATCH_INDICATOR_24H);
@@ -138,7 +135,7 @@ bool wake_face_loop(movement_event_t event, movement_settings_t *settings, void 
         _wake_face_update_display(settings, state);
         break;
     case EVENT_ALARM_LONG_PRESS:
-        state->mode ^= 1;
+        state->mode = !state->mode;
         _wake_face_update_display(settings, state);
         break;
     case EVENT_BACKGROUND_TASK:
