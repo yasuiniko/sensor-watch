@@ -77,7 +77,12 @@ void wake_face_setup(movement_settings_t *settings, uint8_t watch_face_index, vo
 
 void wake_face_activate(movement_settings_t *settings, void *context) {
     (void) settings;
-    (void) context;
+    wake_face_state_t *state = (wake_face_state_t *)context;
+
+    if (settings->bit.alarm_enabled) {
+        state->mode = 1;
+        watch_set_indicator(WATCH_INDICATOR_BELL);
+    }
 }
 void wake_face_resign(movement_settings_t *settings, void *context) {
     (void) settings;
@@ -97,10 +102,9 @@ bool wake_face_wants_background_task(movement_settings_t *settings, void *contex
     (void) settings;
     wake_face_state_t *state = (wake_face_state_t *)context;
 
-    bool rc = false;
     if ( state->mode ) {
         watch_date_time now = watch_rtc_get_date_time();
-        rc = state->hour==now.unit.hour && state->minute==now.unit.minute;
+        return state->hour==now.unit.hour && state->minute==now.unit.minute;
         // We’re at the mercy of the wants_background_task handler
         // In Safari, the emulator triggers at the ›end‹ of the minute
         // Converting to Unix timestamps and taking a difference between now and wake
@@ -109,7 +113,7 @@ bool wake_face_wants_background_task(movement_settings_t *settings, void *contex
         // of now. If it is, take tomorrow’s date, calculating month and year rollover
         // if need be.
     }
-    return rc;
+    return false;
 }
 
 bool wake_face_loop(movement_event_t event, movement_settings_t *settings, void *context) {
