@@ -86,7 +86,9 @@ bool simple_clock_face_loop(movement_event_t event, movement_settings_t *setting
             watch_display_string(buf, pos);
             break;
         case EVENT_LOW_ENERGY_UPDATE:
+            watch_clear_display();
             if (!watch_tick_animation_is_running()) watch_start_tick_animation(500);
+            break;
         case EVENT_TICK:
             date_time = watch_rtc_get_date_time();
             previous_date_time = state->previous_date_time;
