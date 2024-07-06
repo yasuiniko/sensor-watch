@@ -48,11 +48,20 @@ void simple_coin_flip_face_activate(movement_settings_t *settings, void *context
     (void) context;
 }
 
-static uint32_t get_random(uint32_t max) {
+/** @brief true random number generator
+ */
+static uint32_t _get_random_binary(void) {
     #if __EMSCRIPTEN__
-    return rand() % max;
+    return rand() % INT32_MAX & 1;
     #else
-    return arc4random_uniform(max);
+    hri_mclk_set_APBCMASK_TRNG_bit(MCLK);
+    hri_trng_set_CTRLA_ENABLE_bit(TRNG);
+
+    while (!hri_trng_get_INTFLAG_reg(TRNG, TRNG_INTFLAG_DATARDY)); // Wait for TRNG data to be ready
+
+    watch_disable_TRNG();
+    hri_mclk_clear_APBCMASK_TRNG_bit(MCLK);
+    return hri_trng_read_DATA_reg(TRNG) & 1; // Read a single 32-bit word from TRNG and return it
     #endif
 }
 
@@ -103,7 +112,7 @@ bool simple_coin_flip_face_loop(movement_event_t event, movement_settings_t *set
                     break;
                 case 6:
                     movement_request_tick_frequency(1);
-                    if (get_random(2)) {
+                    if (_get_random_binary()) {
                         watch_display_string("Heads ", 4);
                     } else {
                         watch_display_string(" Tails", 4);
