@@ -72,7 +72,7 @@ static void generate_random_number(probability_state_t *state) {
     #else
 
     uint32_t mask = 0xFFFFFFFF;
-    mask >>= __builtin_clz(state->dice_sides-1|1);
+    mask >>= __builtin_clz( (state->dice_sides-1) | 1 );
     do {
 
         // TRNG magic start
