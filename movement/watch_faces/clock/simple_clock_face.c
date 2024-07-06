@@ -94,7 +94,7 @@ bool simple_clock_face_loop(movement_event_t event, movement_settings_t *setting
             previous_date_time = state->previous_date_time;
             state->previous_date_time = date_time.reg;
 
-            char seconds[2] = "  ";
+            char seconds[3] = "  ";
             if (event.event_type != EVENT_LOW_ENERGY_UPDATE) 
                 sprintf(seconds, "%02d", date_time.unit.second);
 
