@@ -28,7 +28,7 @@
 #include "movement_faces.h"
 
 const watch_face_t watch_faces[] = {
-    clock_face,
+    world_clock2_face,
     probability_face,
     thermistor_readout_face,
     // tomato_face,
@@ -38,7 +38,6 @@ const watch_face_t watch_faces[] = {
     finetune_face,    
     set_time_face,
     nanosec_face,
-
 };
 
 #define MOVEMENT_NUM_FACES (sizeof(watch_faces) / sizeof(watch_face_t))

@@ -96,11 +96,7 @@ typedef enum {
 } world_clock2_mode_t;
 
 typedef struct {
-    bool selected;
-} world_clock2_zone_t;
-
-typedef struct {
-    world_clock2_zone_t zones[NUM_TIME_ZONES];
+    uint8_t zones[NUM_TIME_ZONES];
     world_clock2_mode_t current_mode;
     uint8_t current_zone;
     uint32_t previous_date_time;
