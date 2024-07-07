@@ -142,7 +142,6 @@ static bool mode_display(movement_event_t event, movement_settings_t *settings, 
     char buf[11];
     uint8_t pos;
 
-    uint32_t timestamp;
     uint32_t previous_date_time;
     watch_date_time date_time;
 
@@ -152,7 +151,7 @@ static bool mode_display(movement_event_t event, movement_settings_t *settings, 
 	case EVENT_LOW_ENERGY_UPDATE:
 	    /* Update indicators and colon on refresh */
 	    if (refresh_face) {
-            watch_clear_indicator(WATCH_INDICATOR_SIGNAL);
+            // watch_clear_indicator(WATCH_INDICATOR_SIGNAL);
             watch_set_colon();
             // if (settings->bit.clock_mode_24h)
             //     watch_set_indicator(WATCH_INDICATOR_24H);
@@ -163,10 +162,8 @@ static bool mode_display(movement_event_t event, movement_settings_t *settings, 
 
         /* Determine current time at time zone and store date/time */
 	    date_time = watch_rtc_get_date_time();
-	    timestamp = watch_utility_date_time_to_unix_time(date_time, movement_timezone_offsets[settings->bit.time_zone] * 60);
-	    date_time = watch_utility_date_time_from_unix_time(timestamp, movement_timezone_offsets[state->current_zone] * 60);
-	    previous_date_time = state->previous_date_time;
-	    state->previous_date_time = date_time.reg;
+        previous_date_time = state->previous_date_time;
+        state->previous_date_time = date_time.reg;
 
 	    if ((date_time.reg >> 6) == (previous_date_time >> 6) && event.event_type != EVENT_LOW_ENERGY_UPDATE) {
             /* Everything before seconds is the same, don't waste cycles setting those segments. */
@@ -217,11 +214,14 @@ static bool mode_display(movement_event_t event, movement_settings_t *settings, 
     return true;
 }
 
+
 static bool mode_settings(movement_event_t event, movement_settings_t *settings, world_clock2_state_t *state)
 {
     char buf[11];
     int8_t hours, minutes;
     div_t result;
+    uint32_t timestamp;
+    watch_date_time date_time;
 
     switch (event.event_type) {
         case EVENT_ACTIVATE:
@@ -230,8 +230,8 @@ static bool mode_settings(movement_event_t event, movement_settings_t *settings,
             /* Update indicator and colon on refresh */
             if (refresh_face) {
                 watch_clear_colon();
-                watch_clear_indicator(WATCH_INDICATOR_24H);
-                watch_clear_indicator(WATCH_INDICATOR_PM);
+                // watch_clear_indicator(WATCH_INDICATOR_24H);
+                // watch_clear_indicator(WATCH_INDICATOR_PM);
                 refresh_face = false;
             }
             result = div(movement_timezone_offsets[state->current_zone], 60);
@@ -263,17 +263,27 @@ static bool mode_settings(movement_event_t event, movement_settings_t *settings,
                 state->current_zone = 0;
             break;
         case EVENT_LIGHT_BUTTON_UP:
+            if (state->current_zone == 0)
+                state->current_zone = 41;
             state->current_zone = state->current_zone + BACKWARD;
-            if (state->current_zone < 0)
-                state->current_zone = 40;
             break;
         case EVENT_LIGHT_BUTTON_DOWN:
             /* Do nothing */
             break;
+        case EVENT_TIMEOUT:
         case EVENT_ALARM_LONG_PRESS:
             /* Switch to display mode */
             state->current_mode = WORLD_CLOCK2_MODE_DISPLAY;
             refresh_face = true;
+
+            // update time
+            date_time = watch_rtc_get_date_time();
+            timestamp = watch_utility_date_time_to_unix_time(date_time, movement_timezone_offsets[settings->bit.time_zone] * 60);
+            date_time = watch_utility_date_time_from_unix_time(timestamp, movement_timezone_offsets[state->current_zone] * 60);
+            watch_rtc_set_date_time(date_time);
+
+            // write the time zone
+            settings->bit.time_zone = state->current_zone;
             break;
         case EVENT_MODE_BUTTON_UP:
             /* Reset frequency and move to next face */
