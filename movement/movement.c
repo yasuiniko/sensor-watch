@@ -526,7 +526,9 @@ bool app_loop(void) {
 
         // _sleep_mode_app_loop takes over at this point and loops until le_mode_ticks is reset by the extwake handler,
         // or wake is requested using the movement_request_wake function.
+        watch_start_tick_animation(500);
         _sleep_mode_app_loop();
+        watch_stop_tick_animation();
         // as soon as _sleep_mode_app_loop returns, we prepare to reactivate
         // ourselves, but first, we check to see if we woke up for the buzzer:
         if (movement_state.is_buzzing) {

@@ -56,6 +56,7 @@
 
 typedef struct {
     bool light_on_button;   // determines whether the light button actually triggers the led
+    bool beep_on_button;    // determines whether the beep button actually triggers the buzzer
 } stock_stopwatch_state_t;
 
 void stock_stopwatch_face_setup(movement_settings_t *settings, uint8_t watch_face_index, void ** context_ptr);

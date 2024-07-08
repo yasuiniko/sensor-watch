@@ -28,7 +28,8 @@
 #include "movement_faces.h"
 
 const watch_face_t watch_faces[] = {
-    world_clock2_face,
+    clock_face,
+    stock_stopwatch_face,
     probability_face,
     thermistor_readout_face,
     // tomato_face,

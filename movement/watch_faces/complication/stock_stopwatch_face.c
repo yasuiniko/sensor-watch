@@ -123,9 +123,10 @@ void TC2_Handler(void) {
 
 #endif
 
-static inline void _button_beep(movement_settings_t *settings) {
+static inline void _button_beep(stock_stopwatch_state_t *state) {
     // play a beep as confirmation for a button press (if applicable)
-    if (settings->bit.button_should_sound) watch_buzzer_play_note(BUZZER_NOTE_C7, 50);
+    if (state->beep_on_button) 
+        watch_buzzer_play_note(BUZZER_NOTE_C7, 50);
 }
 
 /// @brief Display minutes, seconds and fractions derived from 128 Hz tick counter
@@ -135,11 +136,14 @@ static void _display_ticks(uint32_t ticks) {
     char buf[14];
     uint8_t sec_100 = (ticks & 0x7F) * 100 / 128;
     uint32_t seconds = ticks >> 7;
-    uint32_t minutes = seconds / 60;
+    div_t result = div(seconds, 60);
+    uint32_t minutes = result.quot;
+    uint32_t sec = result.rem;
+
     if (_hours)
-        sprintf(buf, "%2u%02lu%02lu%02u", _hours, minutes, (seconds % 60), sec_100);
+        sprintf(buf, "%2u%02lu%02lu%02u", _hours, minutes, sec, sec_100);
     else
-        sprintf(buf, "  %02lu%02lu%02u", minutes, (seconds % 60), sec_100);
+        sprintf(buf, "  %02lu%02lu%02u", minutes, sec, sec_100);
     watch_display_string(buf, 2);
 }
 
@@ -153,12 +157,14 @@ static void _draw() {
             if (seconds != _old_seconds) {
                 // seconds have changed
                 _old_seconds = seconds;
-                uint8_t minutes = seconds / 60;
-                seconds %= 60;
+                div_t result = div(seconds, 60);
+                uint_fast8_t minutes = result.quot;
+                seconds = result.rem;
                 if (minutes != _old_minutes) {
                     // minutes have changed, draw everything
                     _old_minutes = minutes;
-                    minutes %= 60;
+                    if (minutes > 59) 
+                        minutes -= 60;
                     if (_hours)
                         // with hour indicator
                         sprintf(buf, "%2u%02u%02lu%02u", _hours, minutes, seconds, sec_100);
@@ -220,8 +226,10 @@ void stock_stopwatch_face_setup(movement_settings_t *settings, uint8_t watch_fac
 }
 
 void stock_stopwatch_face_activate(movement_settings_t *settings, void *context) {
-    (void) settings;
-    (void) context;
+    stock_stopwatch_state_t *state = (stock_stopwatch_state_t *)context;
+    if (settings->bit.button_should_sound)
+        state->beep_on_button = true;
+
     if (_is_running) {
         // The background task will keep the watch from entering low energy mode while the stopwatch is on screen.
         movement_schedule_background_task(distant_future);
@@ -251,11 +259,10 @@ bool stock_stopwatch_face_loop(movement_event_t event, movement_settings_t *sett
         case EVENT_TICK:
             _draw();
             break;
-        case EVENT_LIGHT_LONG_PRESS:
+        case EVENT_LIGHT_LONG_UP:
             // kind od hidden feature: long press toggles light on or off
-            state->light_on_button = !state->light_on_button;
-            if (state->light_on_button) movement_illuminate_led();
-            else watch_set_led_off();
+            state->beep_on_button = !state->beep_on_button;
+            _button_beep(state);
             break;
         case EVENT_ALARM_BUTTON_DOWN:
             _is_running = !_is_running;
@@ -275,10 +282,10 @@ bool stock_stopwatch_face_loop(movement_event_t event, movement_settings_t *sett
                 movement_cancel_background_task();
             }
             _draw();
-            _button_beep(settings);
+            _button_beep(state);
             break;
         case EVENT_LIGHT_BUTTON_DOWN:
-            if (state->light_on_button) movement_illuminate_led();
+            // if (state->light_on_button) movement_illuminate_led();
             if (_is_running) {
                 if (_lap_ticks) {
                     // clear lap and continue running
@@ -297,7 +304,7 @@ bool stock_stopwatch_face_loop(movement_event_t event, movement_settings_t *sett
                 } else if (_ticks) {
                     // reset stopwatch
                     _ticks = _lap_ticks = _blink_ticks = _old_minutes = _old_seconds = _hours = 0;
-                    _button_beep(settings);
+                    _button_beep(state);
                 }
             }
             _display_ticks(_ticks);
